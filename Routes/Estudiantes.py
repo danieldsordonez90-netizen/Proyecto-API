@@ -9,8 +9,7 @@ from Controllers.Estudiantes import (
     crear_estudiante,
     obtener_estudiante,
     obtener_todos_estudiantes,
-    actualizar_estudiante,
-    desactivar_estudiante
+    actualizar_estudiante
 )
 from Controllers.Prestamos import obtener_prestamos_de_estudiante
 
@@ -30,20 +29,17 @@ async def buscar_estudiante(id: int):
 
 @router.post("/", tags=["Estudiantes"], response_model=Estudiante, status_code=status.HTTP_201_CREATED)
 async def registrar_estudiante(estudiante: Estudiante):
+    """Registra un nuevo estudiante en el sistema."""
     return await crear_estudiante(estudiante)
 
 @router.put("/{id}", tags=["Estudiantes"], response_model=Estudiante, status_code=status.HTTP_200_OK)
 async def actualizar_datos_estudiante(id: int, estudiante: Estudiante):
+    """
+    Actualiza datos de un estudiante (Nombre, Edad, etc.)
+    o su estado (Esta_Activo: true/false).
+    """
     estudiante.id_matricula_estudiante = id
     return await actualizar_estudiante(estudiante)
-
-@router.put("/{id}/desactivar", tags=["Estudiantes"])
-async def desactivar_un_estudiante(id: int):
-    """
-    Desactiva un estudiante (Lo "alimina").
-    Solo funciona si el estudiante no tiene préstamos activos.
-    """
-    return await desactivar_estudiante(id)
 
 # --- Endpoints de Relaciones ---
 

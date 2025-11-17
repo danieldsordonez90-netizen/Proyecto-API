@@ -1,15 +1,14 @@
+# Archivo: Models/Estudiantes.py
+
 from pydantic import BaseModel, Field
 from typing import Optional
 
-# Modelo Pydantic para representar un estudiante.
 class Estudiante(BaseModel):
-    # ID de matrícula del estudiante.
     id_matricula_estudiante: Optional[int] = Field(
         default=None, 
         description="ID único de matrícula para el estudiante (Auto-incremental)"
     )
 
-    # Nombre del estudiante.
     Nombre_estudiante: Optional[str] = Field(
         default=None,
         description="Nombre completo del estudiante",
@@ -17,7 +16,6 @@ class Estudiante(BaseModel):
         examples=["Juan Perez", "Maria Martinez"]
     )
 
-    # Correo electrónico del estudiante.
     Correo_estudiante: Optional[str] = Field(
         default=None,
         description="Correo electrónico del estudiante",
@@ -25,7 +23,6 @@ class Estudiante(BaseModel):
         examples=["usuario@example.com"]
     )
 
-    # Edad del estudiante.
     Edad: Optional[int] = Field(
         default=None,
         description="Edad del estudiante",
@@ -34,6 +31,6 @@ class Estudiante(BaseModel):
     )
     
     Esta_Activo: Optional[bool] = Field(
-        default=True,
+        default=None,
         description="Indica si el estudiante está activo (Borrado Lógico)"
     )

@@ -70,13 +70,21 @@ async def crear_estudiante(estudiante: Estudiante) -> Estudiante:
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
-# Actualiza los datos de un estudiante existente.
+# Actualiza los datos de un estudiante (incluyendo estado Activo/Inactivo).
 async def actualizar_estudiante(estudiante: Estudiante) -> Estudiante:
-    if estudiante.id_matricula_estudiante is None:
+    id_estudiante = estudiante.id_matricula_estudiante
+    if id_estudiante is None:
         raise HTTPException(status_code=400, detail="El id_matricula_estudiante es necesario para actualizar.")
 
-    # Excluye la llave primaria y el estado del update.
-    datos_dict = estudiante.model_dump(exclude={'id_matricula_estudiante', 'Esta_Activo'}, exclude_none=True) 
+    # Regla de negocio: Si se intenta desactivar, validar préstamos pendientes.
+    if estudiante.Esta_Activo is False:
+        activos = await contar_prestamos_activos(id_estudiante)
+        if activos > 0:
+            raise HTTPException(status_code=409, 
+                detail=f"Conflicto: No se puede desactivar. El estudiante tiene {activos} préstamos activos.")
+
+    # Prepara el update dinámico excluyendo campos nulos y el ID.
+    datos_dict = estudiante.model_dump(exclude={'id_matricula_estudiante'}, exclude_none=True) 
 
     if not datos_dict:
         raise HTTPException(status_code=400, detail="No hay datos para actualizar.")
@@ -90,35 +98,14 @@ async def actualizar_estudiante(estudiante: Estudiante) -> Estudiante:
         WHERE [id_matricula_estudiante] = ?;
     """
     params = [datos_dict[k] for k in llaves]
-    params.append(estudiante.id_matricula_estudiante)
+    params.append(id_estudiante)
 
     try:
+        await obtener_estudiante(id_estudiante) # Asegura que existe
         await execute_query_json(updatescript, params, needs_commit=True)
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error actualizando estudiante: {str(e)}")
 
-    return await obtener_estudiante(estudiante.id_matricula_estudiante)
-
-# Desactiva un estudiante (Borrado Lógico) si no tiene préstamos activos.
-async def desactivar_estudiante(id_estudiante: int):
-    
-    await obtener_estudiante(id_estudiante)
-    
-    # Regla de negocio: Valida préstamos pendientes.
-    activos = await contar_prestamos_activos(id_estudiante)
-    if activos > 0:
-        raise HTTPException(status_code=409, 
-            detail=f"Conflicto: No se puede desactivar. El estudiante tiene {activos} préstamos activos.")
-
-    updatescript = """
-        UPDATE [biblioteca].[estudiante]
-        SET [Esta_Activo] = 0
-        WHERE [id_matricula_estudiante] = ?;
-    """
-    params = [id_estudiante]
-
-    try:
-        await execute_query_json(updatescript, params, needs_commit=True)
-        return {"mensaje": "Estudiante desactivado correctamente."}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error desactivando estudiante: {str(e)}")
+    return await obtener_estudiante(id_estudiante)
