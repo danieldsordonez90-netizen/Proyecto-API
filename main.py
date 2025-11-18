@@ -1,3 +1,5 @@
+import uvicorn
+
 # Importaciones necesarias de FastAPI y los routers de cada módulo.
 from typing import Union
 from fastapi import FastAPI
@@ -36,3 +38,6 @@ def read_item(item_id: int, q: Union[str, None] = None):
     Ruta de ejemplo para demostrar el paso de parámetros en la URL y query params.
     """
     return {"item_id": item_id, "q": q}
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info")

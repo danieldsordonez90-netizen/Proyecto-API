@@ -1,0 +1,38 @@
+######################################################################
+# Release helper (PowerShell) — build, tag and push to ACR
+# - Staging build shows the "Staging" dashboards
+# - Production build hides "Staging" by default
+#
+# Before running, set $env:VERSION if needed.
+######################################################################
+
+# --- Config ---
+$env:VERSION = "0.0.1"
+$env:ACR_PRD = "danieldslibrary"
+$env:IMAGE_LOCAL = "biblioteca-api"
+$env:REPO_PROD = "$env:ACR_PRD.azurecr.io/$env:IMAGE_LOCAL"
+
+
+########################################
+# 2) PRODUCTION: build locally and push
+########################################
+
+# Build PROD (staging hidden by default)
+docker buildx build `
+	--platform linux/amd64 `
+	-t "${env:IMAGE_LOCAL}:prod" `
+	. --load
+
+# (Optional) Run locally
+docker rm -f biblioteca-api 2>$null
+docker run --env-file .env -p 8000:8000 -d --name biblioteca-api "${env:IMAGE_LOCAL}:prod"
+
+# Login to Azure & ACR
+az login
+az acr login --name $env:ACR_PRD
+
+# Tag & Push PROD
+docker tag "${env:IMAGE_LOCAL}:prod" "${env:REPO_PROD}:${env:VERSION}"
+docker tag "${env:IMAGE_LOCAL}:prod" "${env:REPO_PROD}:latest"
+docker push "${env:REPO_PROD}:${env:VERSION}"
+docker push "${env:REPO_PROD}:latest"
